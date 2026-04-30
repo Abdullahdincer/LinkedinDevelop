@@ -1,0 +1,202 @@
+import re
+from .data_fetcher import fetch_data, fetch_multiple_data
+import urllib.parse
+import json
+from datetime import datetime
+
+'''
+def is_valid_date(date_str):
+    if not isinstance(date_str, str):
+        return False
+    pattern = r'([A-Za-z]+ \d{4})'
+    matches = re.findall(pattern, date_str)
+    if len(matches) != 2:
+        return False
+    try:
+        start_date = datetime.strptime(matches[0], '%b %Y')
+        end_date = datetime.strptime(matches[1], '%b %Y')
+        return True
+    except ValueError:
+        return False
+
+def extract_experience_details(entry, experience_data, is_paged_list_component):
+    entity = entry.get("components", {}).get("entityComponent", {})
+    company_name = None
+    job_title = None
+    location = None
+    company_logo_urn = None
+    root_url = None
+    image_path = None
+
+    if entity:
+        # Şirket Adı Çekimi
+        if entity.get('subtitle') and entity['subtitle'].get('text'):
+            company_name = entity.get("subtitle", {}).get("text", "").split(" \u00b7 ")[0]
+        
+        # Unvan Çekimi (Güncellendi: titleV2 -> text -> text yolu)
+        title_v2 = entity.get('titleV2', {})
+        if title_v2 and title_v2.get('text'):
+            # LinkedIn'in yeni 'Tetris' yapısındaki derin metin erişimi
+            job_title = title_v2['text'].get('text', '')
+
+        # Konum Çekimi
+        if is_paged_list_component and entity.get("caption", {}) and "text" in entity.get("caption", {}):
+            location = entity.get("caption", {}).get("text", "")
+        elif entity.get('metadata') and entity['metadata'].get('text'):
+            location = entity.get("metadata", {}).get("text", "").split(" \u00b7 ")[0]
+
+        # Logo İşlemleri
+        if entity.get("image"):
+            attrs = entity.get("image", {}).get("attributes", [{}])
+            if attrs:
+                company_logo_urn = attrs[0].get("detailData", {}).get("*companyLogo")
+
+        if company_logo_urn:
+            for element in experience_data.get("included", []):
+                if element.get("entityUrn") == company_logo_urn:
+                    logo_res = element.get("logoResolutionResult")
+                    if logo_res:
+                        vector_image = logo_res.get("vectorImage", {})
+                        if vector_image:
+                            root_url = vector_image.get("rootUrl")
+                            artifacts = vector_image.get("artifacts", [{}])
+                            if artifacts:
+                                image_path = artifacts[-1].get("fileIdentifyingUrlPathSegment")
+                            break
+
+    return {
+        "companyName": company_name,
+        "jobTitle": job_title,
+        "location": location,
+        "companyLogo": f"{root_url}{image_path}" if root_url and image_path else None
+    }
+
+def get_correct_experience_data(record, pagedListComponent, experience_data):
+    if pagedListComponent:
+        for element in experience_data.get("included", []):
+            if element.get("entityUrn") == pagedListComponent:
+                record['companyName'] = record['jobTitle']
+                elements = element.get("components", {}).get("elements", [])
+                if elements:
+                    # Güncel unvan çekimi (titleV2 -> text -> text)
+                    entity_comp = elements[0].get("components", {}).get("entityComponent", {})
+                    title_text_obj = entity_comp.get("titleV2", {}).get("text", {})
+                    if isinstance(title_text_obj, dict):
+                        record['jobTitle'] = title_text_obj.get("text", "")
+                
+                # Konum güncelleme
+                for component in elements:
+                    meta = component.get("components", {}).get("entityComponent", {}).get("metadata", {})
+                    if meta and meta.get("text"):
+                        record['location'] = meta.get("text", "")
+                        break
+    return record
+
+def get_experience_datas(profile_urns, follower_number):
+    profile_urls = [f'https://www.linkedin.com/voyager/api/graphql?variables=(profileUrn:{urllib.parse.quote(profile_urn)},sectionType:experience,locale:en_US)&queryId=voyagerIdentityDashProfileComponents.a62d9c6739ad5a19fdf61591073dec32' for profile_urn in profile_urns]
+
+    experience_datas = fetch_multiple_data(profile_urls, follower_number)
+
+    if experience_datas:
+        records = []
+    
+        for url, experience_data in experience_datas.items():
+            if not (experience_data and "included" in experience_data):
+                continue
+
+            included = experience_data["included"]
+            componentCount = sum(1 for item in included if "components" in item and item["components"])
+
+            # Mevcut rolü bulmak için döngüleri optimize ediyoruz
+            if componentCount > 1:
+                for component in included:
+                    elements = component.get("components", {}).get("elements", [])
+                    if not elements:
+                        continue
+                    
+                    i = 0
+                    flag = 0
+                    pagedListComponent = ""
+                    for element in elements:
+                        entity_comp = element.get("components", {}).get("entityComponent")
+                        if entity_comp:
+                            sub_comp = entity_comp.get("subComponents")
+                            if sub_comp and isinstance(sub_comp, dict):
+                                comps = sub_comp.get("components", [])
+                                if comps and isinstance(comps, list) and len(comps) > 0:
+                                    inner_comp = comps[0].get("components", {})
+                                    if isinstance(inner_comp, dict) and "*pagedListComponent" in inner_comp:
+                                        pagedListComponent = inner_comp.get("*pagedListComponent", "")
+                                        flag = 1
+                                        break
+                        i += 1
+                    
+                    if flag == 1:
+                        record = extract_experience_details(elements[0], experience_data, 1)
+                        record = get_correct_experience_data(record, pagedListComponent, experience_data)
+                    else:
+                        record = extract_experience_details(elements[0], experience_data, 0)
+                    
+                    record["profileUrl"] = url
+                    records.append(record)
+                    break # Bu profil için en güncel işi aldık, çıkıyoruz.
+
+            elif componentCount == 1:
+                elements = included[0].get("components", {}).get("elements", [])
+                if elements:
+                    record = extract_experience_details(elements[0], experience_data, 0)
+                    record["profileUrl"] = url
+                    records.append(record)
+
+        return records
+    return []
+
+# Mevcut tekil profil fonksiyonunu da güncel yapıya uyumlu hale getirelim
+def get_experience_data(profile_urn, element_number, follower_number):
+    encoded_profile_urn = urllib.parse.quote(profile_urn)
+    profile_url = f'https://www.linkedin.com/voyager/api/graphql?variables=(profileUrn:{encoded_profile_urn},sectionType:experience,locale:en_US)&queryId=voyagerIdentityDashProfileComponents.a62d9c6739ad5a19fdf61591073dec32'
+    experience_data = fetch_data(profile_url)
+
+    if experience_data and experience_data.get("included"):
+        elements = experience_data.get("included", [])[0].get("components", {}).get("elements", [])
+        if elements:
+            record = extract_experience_details(elements[0], experience_data, 0)
+            return [record]
+    return []
+'''
+def extract_companies_about (company_names) :
+    company_about_url =  [ f'https://www.linkedin.com/voyager/api/graphql?variables=(universalName:{name})' \
+    '&queryId=voyagerOrganizationDashCompanies.1164a39ce57e74d426483681eeb51d02'
+    for name in company_names
+    ]
+
+    results = fetch_multiple_data(company_about_url,len(company_about_url))
+    company_records =[]
+    for url,data in results.items() : 
+        if not data or "included" not in data:
+            continue
+        
+        company_obj = next((item for item in data["included"] 
+                           if item.get("$type") == "com.linkedin.voyager.dash.organization.Company"), None)
+        
+        if company_obj:
+            # UniversalName'i URL'den çekiyoruz (eşleştirme için)
+            u_name = url.split("universalName:")[1].split(")")[0]
+            
+            # Verileri cımbızla çekme
+            record = {
+                "universalName": u_name,
+                "companyName": company_obj.get("name"),
+                "staffCount": company_obj.get("employeeCount"),
+                "staffRange": f"{company_obj.get('employeeCountRange', {}).get('start', '0')}-{company_obj.get('employeeCountRange', {}).get('end', '+')}",
+                "industry": company_obj.get("specialities", ["Bilinmiyor"])[0] if company_obj.get("specialities") else "Sektör Belirtilmemiş",
+                "phone": company_obj.get("phone", {}).get("number", "Yok"),
+                "website": company_obj.get("websiteUrl", ""),
+                "city": company_obj.get("headquarter", {}).get("address", {}).get("city", "Bilinmiyor"),
+                "followerCount": company_obj.get("followerCount", 0)
+            }
+            company_records.append(record)
+            
+    return company_records
+extract_companies_about('nota-software')
+8211

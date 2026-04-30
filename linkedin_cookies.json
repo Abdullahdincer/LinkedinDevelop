@@ -1,0 +1,16 @@
+[
+  {
+    "domain": ".linkedin.com",
+    "name": "li_at",
+    "value": "AQEDAUIuZ28AaQpxAAABnc7icakAAAGd8u71qU0AbWkcdBQSOkhEDg0TmH6uKv6IVVvTvoTv3I4qs_Vvh8n5g9dD_6DEeyzYES3uJEBxIo3rvezmp6ytsitG5ogT8IJztqizZM_VjsOTQ3wO2X5rrjDo",
+    "path": "/",
+    "secure": true
+  },
+  {
+    "domain": ".linkedin.com",
+    "name": "JSESSIONID",
+    "value": "ajax:0224723563680486301",
+    "path": "/",
+    "secure": true
+  }
+]

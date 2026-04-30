@@ -1,28 +1,91 @@
-# LinkedinDevelop
-Linkedin Tools
-# AeroTech Community Engagement & Management System
-Project Overview (Proje Özeti) : 
-Bu proje, kurumsal markaların LinkedIn üzerindeki dijital varlıklarını optimize etmek ve topluluk etkileşimlerini merkezi bir panelden yönetmek amacıyla geliştirilen açık kaynaklı bir Community Management aracıdır. Projenin temel amacı, LinkedIn Community Management API entegrasyonu kullanarak kurumsal sayfaların paylaşım stratejilerini otomatize etmek ve gelen kullanıcı etkileşimlerini (yorum, beğeni, mention) analiz etmektir.
+# 🚀 LinkedIn Scraper
 
-Technical Architecture (Teknik Mimari)
-Sistem, modern yazılım prensiplerine dayalı olarak şu teknolojileri kullanmaktadır:
+## 📌 Overview
 
-Backend: Python (Flask/FastAPI) ile geliştirilmiş RESTful API yapısı.
+LinkedIn Scraper is a web-based tool that allows users to extract data from LinkedIn:
 
-Authentication: Güvenli veri erişimi için OAuth 2.0 protokolü.
+1. **Company Followers Scraper** – Extract followers of a LinkedIn company page.
+2. **Post Likers Scraper** – Get a list of users who liked a specific LinkedIn post.
 
-Integration: LinkedIn API (v2) üzerinden kurumsal sayfa yönetimi.
+This tool enables users to scrape LinkedIn data with a simple UI and download the results as a CSV file.  
+Built with:
 
-Database: Etkileşim verilerinin analizi için PostgreSQL/SQLite entegrasyonu.
+- **Frontend:** HTML, CSS, JavaScript (No jQuery, pure JS)
+- **Backend:** Flask (Python)
+- **Data Output:** CSV file download
 
-Key Features (Temel Özellikler) : 
-Automated Content Scheduling: Belirlenen zaman dilimlerinde kurumsal paylaşımların otomatik olarak yayınlanması.
+---
 
-Engagement Monitoring: Şirket gönderilerine gelen yorumların gerçek zamanlı takibi ve kategorizasyonu.
+## 🔧 Features
 
-Analytics Dashboard: Paylaşımların erişim ve etkileşim oranlarının görselleştirilmesi.
+✅ **Scrape Company Followers**  
+✅ **Scrape Post Likers**  
+✅ **Validate LinkedIn URLs** (Company & Post)  
+✅ **Download CSV Files Directly**
 
-Organization Admin Verification: LinkedIn kurum doğrulaması üzerinden yetkilendirilmiş erişim yönetimi.
+---
 
-Compliance & Data Privacy (Uyumluluk ve Veri Gizliliği) : 
-Bu uygulama, LinkedIn Developer programı politikalarına tam uyumlu olarak geliştirilmektedir. Kullanıcı verileri asla üçüncü taraflarla paylaşılmaz ve yalnızca yetkilendirilmiş "Organization Administrator" erişimiyle, markanın kendi topluluk yönetimi süreçlerini iyileştirmek amacıyla kullanılır.
+## ⚠️ **Using LinkedIn's Hidden APIs**
+
+This scraper uses **LinkedIn's private (undocumented) APIs** to fetch follower and post-like data.  
+Since these APIs are not officially supported by LinkedIn:
+
+- **They may stop working at any time** if LinkedIn changes its internal API structure.
+- **Scraping LinkedIn data may violate LinkedIn's Terms of Service** – Use responsibly.
+- **You may need to update cookies/session headers periodically** to maintain access.
+
+---
+
+## 🛠️ Installation & Setup
+
+### **🔹 1️⃣ Install Dependencies**
+
+> **Backend (Flask & Python)**
+
+```bash
+pip install -r requirements.txt
+```
+
+### **🔹 2️⃣ Run the Backend**
+
+> **Start the Flask server:**
+
+```bash
+python main.py
+```
+
+## 🚀 How to Use
+
+### **🔹 1️⃣ Open index.html in a browser**
+
+- Simply open the index.html file in your browser.
+
+### **🔹 2️⃣ Select Scraper Type**
+
+- **Company Followers Scraper** - Scrapes followers from a LinkedIn company page.
+- **Post Likers Scraper** - Scrapes users who liked a specific LinkedIn post.
+
+### 🔹 3️⃣ Enter the LinkedIn URL\*\*
+
+- **Company URL Format:**
+
+```bash
+https://www.linkedin.com/company/12345678/admin/dashboard/
+```
+
+- **POST URL Format:**
+
+```bash
+https://www.linkedin.com/feed/update/urn:li:activity:1234567890/
+```
+
+### **🔹 4️⃣ Click Start Scraping**
+
+- The scraper starts, and a loading animation appears on the button.
+- Once completed, the CSV file automatically downloads.
+
+### **🔹 5️⃣ Open Your CSV File**
+
+- The scraped data is saved in a CSV file, ready for analysis
+
+Website Url: https://linkedin-scraper-qcwi.onrender.com/
